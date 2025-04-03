@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Weather Detail</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, #1a1a1a, #333333);
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        #detail-container {
+            width: 100%;
+            height: 100vh;
+            background: rgba(40, 40, 40, 0.9);
+            box-sizing: border-box;
+            padding: 20px;
+            overflow-y: auto; /* Allow scrolling if needed */
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #weather-detail {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .detail-item {
+            background: rgba(80, 80, 80, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 400;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        .icon-container {
+            background: #333333;
+            border-radius: 50%;
+            padding: 6px;
+            margin: 6px auto;
+        }
+        .detail-item img {
+            width: 60px;
+            height: 60px;
+        }
+        .error {
+            color: #FF4500;
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="detail-container">
+        <h1 id="date-title"></h1>
+        <div id="weather-detail"></div>
+    </div>
+
+    <script>
+        const apiKey = '9e5b1a177d86e35cf1b46237fa5aa105';
+        const fixedZip = '80234';
+
+        async function getCoordinates(zip) {
+            const geoUrl = `http://api.openweathermap.org/geo/1.0/zip?zip=${zip},US&appid=${apiKey}`;
+            const response = await fetch(geoUrl);
+            if (!response.ok) throw new Error('Invalid zip code');
+            const data = await response.json();
+            return { lat: data.lat, lon: data.lon };
+        }
+
+        async function getWeatherData(lat, lon) {
+            const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=imperial`;
+            const response = await fetch(weatherUrl);
+            if (!response.ok) throw new Error('Weather data not available');
+            return await response.json();
+        }
+
+        function displayDetail(data, selectedDate) {
+            const detailDiv = document.getElementById('weather-detail');
+            document.getElementById('date-title').textContent = `Detailed Forecast for ${selectedDate}`;
+            detailDiv.innerHTML = '';
+
+            const dayData = data.list.filter(item => {
+                const itemDate = new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                return itemDate === selectedDate;
+            });
+
+            dayData.forEach(item => {
+                const time = new Date(item.dt * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const precip = (item.rain && item.rain['3h']) || (item.snow && item.snow['3h']) || 0;
+                detailDiv.innerHTML += `
+                    <div class="detail-item">
+                        <p>${time}</p>
+                        <div class="icon-container">
+                            <img src="http://openweathermap.org/img/wn/${item.weather[0].icon}.png" alt="${item.weather[0].description}">
+                        </div>
+                        <p>Temp: ${item.main.temp}°F</p>
+                        <p>Feels: ${item.main.feels_like}°F</p>
+                        <p>${item.weather[0].description}</p>
+                        <p>Humidity: ${item.main.humidity}%</p>
+                        <p>Wind: ${item.wind.speed} mph</p>
+                        <p>Pressure: ${item.main.pressure} hPa</p>
+                        <p>Precip: ${precip} mm</p>
+                    </div>
+                `;
+            });
+        }
+
+        async function loadDetail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedDate = urlParams.get('date');
+            const timestamp = urlParams.get('ts');
+
+            if (!selectedDate || !timestamp) {
+                document.getElementById('weather-detail').innerHTML = '<p class="error">No date selected</p>';
+                return;
+            }
+
+            try {
+                const coords = await getCoordinates(fixedZip);
+                const data = await getWeatherData(coords.lat, coords.lon);
+                displayDetail(data, selectedDate);
+            } catch (error) {
+                document.getElementById('weather-detail').innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        window.onload = () => {
+            loadDetail();
+        };
+    </script>
+</body>
+</html>
