@@ -130,7 +130,7 @@
             justify-content: center;
         }
         .forecast-item:hover {
-            transform: scale(1.05);
+            transforme scale(1.05);
         }
         .forecast-link {
             color: #e0e0e0;
@@ -185,7 +185,7 @@
 <body>
     <div id="weather-container">
         <div id="header">
-            <img id="webcam-image" src="https://www.cotrip.org/cameras/i-25/136th-ave.jpg" alt="I-25 at 136th Ave Webcam" onerror="this.onerror=null; this.src=''; this.outerHTML='<div class=\'image-placeholder\'>Webcam Unavailable</div>'">
+            <img id="webcam-image" src="https://api.wunderground.com/weatherstation/WXDailyHistory.asp?ID=KCOTHORN25&format=XML&callback=showWebcam" alt="Thornton Webcam" onerror="this.onerror=null; this.src=''; this.outerHTML='<div class=\'image-placeholder\'>Webcam Unavailable</div>'">
             <div id="weather-current-wrapper">
                 <div id="location-label">Westminster, CO 80234</div>
                 <div id="weather-current"></div>
@@ -208,7 +208,7 @@
         const fixedZip = '80234';
 
         async function getCoordinates(zip) {
-            const geoUrl = `http://api.openweathermap.org/geo/1.0/zip?zip=${zip},US&appid=${apiKey}`;
+            const geoUrl = `https://api.openweathermap.org/geo/1.0/zip?zip=${zip},US&appid=${apiKey}`; // Fixed to HTTPS
             const response = await fetch(geoUrl);
             if (!response.ok) throw new Error('Invalid zip code');
             const data = await response.json();
@@ -266,7 +266,7 @@
             dailyDiv.innerHTML = '';
             const dailyData = {};
             data.list.forEach(item => {
-                const date = new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short', month: "short", day: 'numeric' });
+                const date = new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 if (!dailyData[date]) {
                     dailyData[date] = {
                         temps: [],
