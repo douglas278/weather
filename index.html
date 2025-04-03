@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, #1a1a1a, #333333);
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        #weather-container {
+            width: 100%;
+            height: 100vh;
+            background: rgba(40, 40, 40, 0.9);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #header {
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+        #webcam-image, #radar-image {
+            width: 512px;
+            height: 462px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex: 0 0 auto;
+        }
+        #weather-current-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 512px;
+            flex: 0 0 auto;
+        }
+        #weather-current {
+            text-align: center;
+            padding: 15px;
+            background: rgba(60, 60, 60, 0.8);
+            border-radius: 10px;
+            width: 100%;
+            font-size: 18px;
+            line-height: 1.4;
+            box-sizing: border-box;
+        }
+        #location-label {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background-color: #555555;
+            color: #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .tab-btn.active {
+            background-color: #1E90FF;
+            color: #ffffff;
+            transform: scale(1.05);
+        }
+        .tab-btn:hover {
+            background-color: #666666;
+        }
+        #content {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        #weather-hourly, #weather-daily {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            overflow: hidden;
+        }
+        #weather-hourly.active {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #weather-daily.active {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .forecast-item {
+            background: rgba(80, 80, 80, 0.9);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 400;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .forecast-item:hover {
+            transform: scale(1.05);
+        }
+        .forecast-link {
+            color: #e0e0e0;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: center;
+        }
+        .forecast-link:hover {
+            color: #1E90FF;
+        }
+        .icon-container {
+            background: #333333;
+            border-radius: 50%;
+            padding: 6px;
+            margin: 6px auto;
+        }
+        .forecast-item img {
+            width: 60px;
+            height: 60px;
+        }
+        #weather-current .icon-container {
+            background: #333333;
+            border-radius: 50%;
+            padding: 10px;
+            margin: 0 auto 10px auto;
+        }
+        #weather-current img {
+            width: 100px;
+            height: 100px;
+        }
+        .error {
+            color: #FF4500;
+            text-align: center;
+        }
+        .image-placeholder {
+            width: 512px;
+            height: 462px;
+            background: #555555;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+            font-size: 18px;
+            text-align: center;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="weather-container">
+        <div id="header">
+            <img id="webcam-image" src="https://www.cotrip.org/cameras/i-25/136th-ave.jpg" alt="I-25 at 136th Ave Webcam" onerror="this.onerror=null; this.src=''; this.outerHTML='<div class=\'image-placeholder\'>Webcam Unavailable</div>'">
+            <div id="weather-current-wrapper">
+                <div id="location-label">Westminster, CO 80234</div>
+                <div id="weather-current"></div>
+                <div class="tabs">
+                    <div class="tab-btn" onclick="location.reload()">Refresh</div>
+                    <div class="tab-btn active" onclick="showTab('hourly')">Hourly</div>
+                    <div class="tab-btn" onclick="showTab('daily')">Daily</div>
+                </div>
+            </div>
+            <img id="radar-image" src="https://radar.weather.gov/ridge/standard/KFTG_loop.gif" alt="NWS Radar" onerror="this.onerror=null; this.src=''; this.outerHTML='<div class=\'image-placeholder\'>Radar Unavailable</div>'">
+        </div>
+        <div id="content">
+            <div id="weather-hourly" class="active"></div>
+            <div id="weather-daily"></div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = '9e5b1a177d86e35cf1b46237fa5aa105';
+        const fixedZip = '80234';
+
+        async function getCoordinates(zip) {
+            const geoUrl = `http://api.openweathermap.org/geo/1.0/zip?zip=${zip},US&appid=${apiKey}`;
+            const response = await fetch(geoUrl);
+            if (!response.ok) throw new Error('Invalid zip code');
+            const data = await response.json();
+            return { lat: data.lat, lon: data.lon };
+        }
+
+        async function getWeatherData(lat, lon) {
+            const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=imperial`;
+            const response = await fetch(weatherUrl);
+            if (!response.ok) throw new Error('Weather data not available');
+            const data = await response.json();
+            displayWeather(data);
+            return data;
+        }
+
+        function displayWeather(data) {
+            const current = data.list[0];
+            const currentDiv = document.getElementById('weather-current');
+            const pressure = current.main.pressure;
+            const feelsLike = current.main.feels_like;
+            const precip = (current.rain && current.rain['3h']) || (current.snow && current.snow['3h']) || 0;
+            const visibility = current.visibility / 1609.34;
+            currentDiv.innerHTML = `
+                <div class="icon-container">
+                    <img src="http://openweathermap.org/img/wn/${current.weather[0].icon}@2x.png" alt="${current.weather[0].description}">
+                </div>
+                <p><strong>${current.main.temp}°F</strong> (Feels like ${feelsLike}°F)</p>
+                <p>${current.weather[0].description}</p>
+                <p>Humidity: ${current.main.humidity}% | Wind: ${current.wind.speed} mph</p>
+                <p>Pressure: ${pressure} hPa | Visibility: ${visibility.toFixed(1)} mi</p>
+                <p>Precipitation (3h): ${precip} mm</p>
+            `;
+
+            const hourlyDiv = document.getElementById('weather-hourly');
+            hourlyDiv.innerHTML = '';
+            data.list.slice(0, 8).forEach(item => {
+                const time = new Date(item.dt * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const precipHour = (item.rain && item.rain['3h']) || (item.snow && item.snow['3h']) || 0;
+                hourlyDiv.innerHTML += `
+                    <div class="forecast-item">
+                        <p>${time}</p>
+                        <div class="icon-container">
+                            <img src="http://openweathermap.org/img/wn/${item.weather[0].icon}.png" alt="${item.weather[0].description}">
+                        </div>
+                        <p>${item.main.temp}°F</p>
+                        <p>Feels: ${item.main.feels_like}°F</p>
+                        <p>${item.weather[0].description}</p>
+                        <p>Wind: ${item.wind.speed} mph</p>
+                        <p>Precip: ${precipHour} mm</p>
+                    </div>
+                `;
+            });
+
+            const dailyDiv = document.getElementById('weather-daily');
+            dailyDiv.innerHTML = '';
+            const dailyData = {};
+            data.list.forEach(item => {
+                const date = new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short', month: "short", day: 'numeric' });
+                if (!dailyData[date]) {
+                    dailyData[date] = {
+                        temps: [],
+                        feelsLike: item.main.feels_like,
+                        icon: item.weather[0].icon,
+                        desc: item.weather[0].description,
+                        humidity: item.main.humidity,
+                        wind: item.wind.speed,
+                        precip: (item.rain && item.rain['3h']) || (item.snow && item.snow['3h']) || 0,
+                        timestamp: item.dt
+                    };
+                }
+                dailyData[date].temps.push(item.main.temp);
+            });
+            Object.keys(dailyData).slice(0, 5).forEach(date => {
+                const day = dailyData[date];
+                const high = Math.max(...day.temps).toFixed(0);
+                const low = Math.min(...day.temps).toFixed(0);
+                const dateTimestamp = day.timestamp;
+                dailyDiv.innerHTML += `
+                    <div class="forecast-item">
+                        <a href="daily_detail.html?date=${encodeURIComponent(date)}&ts=${dateTimestamp}" class="forecast-link">
+                            <p>${date}</p>
+                            <div class="icon-container">
+                                <img src="http://openweathermap.org/img/wn/${day.icon}.png" alt="${day.desc}">
+                            </div>
+                            <p>High: ${high}°F</p>
+                            <p>Low: ${low}°F</p>
+                            <p>Feels: ${day.feelsLike}°F</p>
+                            <p>${day.desc}</p>
+                            <p>Humidity: ${day.humidity}%</p>
+                            <p>Wind: ${day.wind} mph</p>
+                            <p>Precip: ${day.precip} mm</p>
+                        </a>
+                    </div>
+                `;
+            });
+        }
+
+        function showTab(tab) {
+            const hourlyDiv = document.getElementById('weather-hourly');
+            const dailyDiv = document.getElementById('weather-daily');
+            const tabs = document.querySelectorAll('.tab-btn');
+
+            hourlyDiv.classList.remove('active');
+            dailyDiv.classList.remove('active');
+            tabs.forEach(t => t.classList.remove('active'));
+
+            if (tab === 'hourly') {
+                hourlyDiv.classList.add('active');
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+            } else if (tab === 'daily') {
+                dailyDiv.classList.add('active');
+                document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+            }
+        }
+
+        async function loadWeather() {
+            try {
+                const coords = await getCoordinates(fixedZip);
+                await getWeatherData(coords.lat, coords.lon);
+            } catch (error) {
+                document.getElementById('weather-current').innerHTML = `<p class="error">Error: ${error.message}</p>`;
+                document.getElementById('weather-hourly').innerHTML = '';
+                document.getElementById('weather-daily').innerHTML = '';
+            }
+        }
+
+        window.onload = () => {
+            loadWeather();
+        };
+    </script>
+</body>
+</html>
